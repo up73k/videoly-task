@@ -1,0 +1,45 @@
+To check that populate db is correct you can use SQL-queries.
+
+1. Total rows count 
+SELECT COUNT (*) FROM public.pageviews 
+SELECT COUNT (*) FROM public.atc_clicks
+(should be 1M)
+
+2. Unique fields count
+SELECT COUNT(DISTINCT impression_id) FROM public.atc_clicks 
+SELECT COUNT(DISTINCT visitor_id) FROM public.pageviews
+SELECT COUNT(DISTINCT product_id) FROM public.pageviews
+(should be 500k, 700k, 200k)
+
+3. Compliance with requirements for hosts
+SELECT COUNT(url) FROM public.pageviews 
+WHERE url ~ '(^http|^https)://(localhost|127.0.0.2|google.com|shop1.com|shop2.com|www.shop1.com|www.google.com|shop4.ru|www3.shop4.ru)'
+(should be 1M)
+
+Not listed in task hosts):
+SELECT url FROM public.pageviews WHERE url !~ '(localhost|127.0.0.2|google.com|shop1.com|shop2.com|www.shop1.com|www.google.com|shop4.ru|www3.shop4.ru)'
+ (should give empty result)
+ 
+Only 'google.com' and 'www.google.com' urls:
+SELECT count(url) FROM public.pageviews WHERE url ~ '(google.com)'
+
+SELECT count(url) FROM public.pageviews WHERE url !~ '(localhost|127.0.0.2|shop1.com|shop2.com|www.shop1.com|shop4.ru|www3.shop4.ru)'
+(should give same results in both queries)
+
+5. Count of pageviews without clicks
+SELECT COUNT(id) FROM public.pageviews 
+	WHERE NOT EXISTS (SELECT impression_id FROM public.atc_clicks WHERE impression_id = public.pageviews.id)
+(should be 500k)
+
+6. Clicks count recorded for one impression:
+SELECT MAX(count_clicks) FROM 
+	(SELECT COUNT(impression_id) AS count_clicks FROM public.atc_clicks GROUP BY impression_id) t1
+SELECT MIN(count_clicks) FROM 
+	(SELECT COUNT(impression_id) AS count_clicks FROM public.atc_clicks GROUP BY impression_id) t1
+(should be 6, 1)
+
+7. How many unique products were visited in June?
+SELECT COUNT(DISTINCT p) FROM
+	(SELECT EXTRACT(MONTH FROM time) as t, product_id as p FROM public.pageviews) t1
+WHERE t = 6
+

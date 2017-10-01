@@ -7,13 +7,14 @@ const moment = require('moment');
 const { Pool } = require('pg');
 const { Readable } = require('stream');
 const { from: copyFrom } = require('pg-copy-streams');
+
 const { postgres } = require('./config.json');
 const { queries, counters, hosts, schemas, timeRange, browsers } = require('./populate.json');
 const { runInPromise, randomInt, randomStr, getFromSet } = require('./helpers');
 
 const pool = new Pool(postgres);
 
-(() => {
+(function main() {
   const log = debug('vtask::main');
   co(function* () {
     yield createDb(postgres);
@@ -25,19 +26,19 @@ const pool = new Pool(postgres);
     yield createTables(client);
     log('Tables created');
 
-    console.time('fillTables');
+    console.time('Time spent on filling tables');
     yield fillTables(client);
-    console.timeEnd('fillTables');
+    console.timeEnd('Time spent on filling tables');
     log('Tables filled');
 
     client.release();
     process.exit(0);
   }).catch((err) => {
-    log(`Error happend: ${err.code || err.status || err.statusCode || ''} ${err.message || err.nativeMessage}`);
-    log(`Stack: ${err.stack}`);
+    log(`Error happend: ${err.code || err.status || err.statusCode || ''} ${err.message || err.nativeMessage || ''}`);
+    log(`Stack: ${err.stack || ''}`);
     process.exit(1);
   });
-})();
+}());
 
 
 function* createDb({ user, host, database }) {
@@ -47,7 +48,7 @@ function* createDb({ user, host, database }) {
     yield runInPromise(pgtools.dropdb, [{ user, host }, database]);
   } catch (err) {
     log(`Skip dropping db ${database} by reason: 
-    ${err.code || err.status || err.statusCode} ${err.message || err.nativeMessage}`);
+    ${err.code || err.status || err.statusCode || ''} ${err.message || err.nativeMessage || ''}`);
   }
 
   return yield runInPromise(pgtools.createdb, [{ user, host }, database]);
@@ -60,26 +61,20 @@ function* createTables(client) {
 function fillTables(client) {
   const log = debug('vtask::fillTables');
 
-  const [streamA, streamB] = [queries.copyA, queries.copyB].map((q) => client.query(copyFrom(q)));
-  log('COPY tables started.');
-
-  const impressionsFirstClick = [];
-  const impressionsOtherClicks = [];
-  const impressionsUnclicked = [];
+  const [firstClick, otherClicks, unclicked] = [[], [], []];
 
   const rowA = () => {
-    const productSet = new Set();
-    const visitorSet = new Set();
-    let impressionsCounter = 0;
+    const [productSet, visitorSet] = [new Set(), new Set()];
+    let impressionsWithClicksCounter = 0;
 
     return function A() {
       const timestamp = randomInt(timeRange.start, timeRange.stop);
-      if (impressionsCounter < counters.impressions && Math.random() >= 0.49) {
-        impressionsCounter++;
-        impressionsFirstClick.push([A.counter, timestamp]);
-        impressionsOtherClicks.push(..._.times(randomInt(0, 5), () => [A.counter, timestamp]));
+      if (impressionsWithClicksCounter < counters.impressions && Math.random() >= 0.5) {
+        impressionsWithClicksCounter++;
+        firstClick.push({ impression_id: A.counter, timestamp });
+        otherClicks.push(..._.times(randomInt(0, 5), () => ({ impression_id: A.counter, timestamp })));
       } else {
-        impressionsUnclicked.push([A.counter, timestamp]);
+        unclicked.push({ impression_id: A.counter, timestamp });
       }
 
       const time = moment(timestamp).format('YYYY-MM-DDTHH:mm:ss');
@@ -108,37 +103,27 @@ function fillTables(client) {
       return `${time}\t${product_id}\t${visitor_id}\t${browser}\t${url}\n`;
     };
   };
-
   const rowB = () => {
     return function B() {
       let imp;
 
-      if (impressionsFirstClick.length > 0) {
-        imp = impressionsFirstClick.pop();
+      if (firstClick.length > 0) {
+        imp = firstClick.pop();
       } else {
-        imp = impressionsOtherClicks.pop() || impressionsUnclicked.pop();
+        imp = otherClicks.pop() || unclicked.pop();
       }
 
-      const [impression_id, timestamp] = imp;
+      const { impression_id, timestamp } = imp;
       const local_time = moment(timestamp + randomInt(250, 250000)).format('YYYY-MM-DDTHH:mm:ss');
-
-      return `${impression_id}\t${randomInt(0, 99999999)}\t${local_time}\n`;
+      const click_id = randomInt(0, 99999999);
+      return `${impression_id}\t${click_id}\t${local_time}\n`;
     };
   };
 
-  const makeReadFn = (stream, name, rowFn) => {
-    rowFn.counter = 0;
-
-    return () => {
-      if (++rowFn.counter === counters.rows + 1) {
-        stream.push(null);
-      } else {
-        stream.push(rowFn());
-        // log('Read %s %d', name, rowFn.counter);
-      }
-    };
-  };
   const [generateA, generateB] = [new Readable(), new Readable()];
+  const [streamA, streamB] = [queries.copyA, queries.copyB].map((q) => client.query(copyFrom(q)));
+  log('COPY tables started.');
+  log('Process can take few minutes. Please wait awhile )');
 
   generateA._read = makeReadFn(generateA, 'A', rowA());
   generateB._read = makeReadFn(generateB, 'B', rowB());
@@ -151,13 +136,13 @@ function fillTables(client) {
 
     streamA.on('error', reject);
     streamA.on('end', () => {
-      log('Stream A closed');
+      log('Stream for Table A closed');
       generateB.pipe(streamB);
     });
 
     streamB.on('error', reject);
     streamB.on('end', () => {
-      log('Stream B closed');
+      log('Stream for Table B closed');
       done();
     });
 
@@ -166,4 +151,17 @@ function fillTables(client) {
 
     generateA.pipe(streamA);
   });
+}
+
+function makeReadFn(stream, name, rowFn) {
+  rowFn.counter = 0;
+
+  return () => {
+    if (++rowFn.counter === counters.rows + 1) {
+      stream.push(null);
+    } else {
+      stream.push(rowFn());
+      // log('Read %s %d', name, rowFn.counter);
+    }
+  };
 }
