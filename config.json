@@ -1,0 +1,9 @@
+{
+  "postgres": {
+    "host": "localhost",
+    "user": "postgres",
+    "password": "",
+    "port": 5432,
+    "database": "videoly-task"
+  }
+}

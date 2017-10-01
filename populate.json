@@ -1,0 +1,22 @@
+{
+  "queries": {
+    "createA": "CREATE TABLE pageviews (id SERIAL PRIMARY KEY, time timestamp, product_id  integer, visitor_id  integer, browser_name varchar(40), url varchar(255));",
+    "createB": "CREATE TABLE atc_clicks (id SERIAL PRIMARY KEY, impression_id integer REFERENCES pageviews(id), click_id  integer, local_time timestamp);",
+    "createIndex": "CREATE INDEX impressions_idx ON atc_clicks(impression_id)",
+    "copyA": "COPY pageviews (time, product_id, visitor_id, browser_name, url) FROM STDIN",
+    "copyB": "COPY atc_clicks (impression_id, click_id, local_time) FROM STDIN"
+  },
+  "hosts": ["localhost", "127.0.0.2", "google.com", "shop1.com", "shop2.com", "www.shop1.com", "www.google.com", "shop4.ru", "www3.shop4.ru"],
+  "schemas": ["http", "https"],
+  "browsers": ["chrome", "opera", "ie", "netscape", "tor", "amigo", "yandex"],
+  "counters": {
+    "rows": 1000000,
+    "visitor": 700000,
+    "product": 200000,
+    "impressions": 500000
+  },
+  "timeRange": {
+    "start": 1483228800000,
+    "stop": 1504137600000
+    }
+}
