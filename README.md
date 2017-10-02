@@ -2,8 +2,7 @@
 test postgresql task
 
 *REQUERIMENTS:*
-Node 6/8
-npm 3/5 / yarn
+Node 6/8, npm 3/5 or yarn
 
 *POPULATE DB*
 
