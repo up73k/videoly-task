@@ -9,8 +9,10 @@ Node 6/8, npm 3/5 or yarn
 This part of task maked with using `COPY table FROM STDIN` command and streams, without temporary saving on disk.
 
 1. Install dependencies:
-`$ yarn install` 
+`$ yarn install`
+
 or
+
 `$ npm install`
 
 2. Edit config.json if needed (for your postgres connection):
@@ -27,7 +29,9 @@ Default is :
   
 3. Run populate-script:
 `$ yarn populate` 
+
 or
+
 `$ npm run populate`
 
 4. Wait 2-5 min
@@ -40,10 +44,14 @@ SQL queries for test consistence of generated with comments are saved in `\sql.t
 
 *Fetch*
 
-Just run fetch-script:
+Just run fetch-script
+
 `$ yarn fetch month=jul site=www.shop1.com` 
+
 or
+
 `$ npm run fetch month=july site=shop1.com`
-It will be the same result in both cases
+
+It will be the same result in both cases.
 
 I've decided to fetch data with raw SQL-query and without using `Sequelize` models (which created and working :) for populated data because current task resolved more simple way. I hope I have correctly understood the intent. 
