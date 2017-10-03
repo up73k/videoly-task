@@ -9,6 +9,7 @@ Node 6/8, npm 3/5 or yarn
 This part of task maked with using `COPY table FROM STDIN` command and streams, without temporary saving on disk.
 
 1. Install dependencies:
+
 `$ yarn install`
 
 or
@@ -28,6 +29,7 @@ Default is :
   ```
   
 3. Run populate-script:
+
 `$ yarn populate` 
 
 or
@@ -44,7 +46,7 @@ SQL queries for test consistence of generated with comments are saved in `\sql.t
 
 *Fetch*
 
-Just run fetch-script
+Just run fetch-script:
 
 `$ yarn fetch month=jul site=www.shop1.com` 
 
