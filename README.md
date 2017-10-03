@@ -37,3 +37,13 @@ P.S. If you'll have troubles, fell free to tell me about it.
 *SQL*
 
 SQL queries for test consistence of generated with comments are saved in `\sql.txt`
+
+*Fetch*
+
+Just run fetch-script:
+`$ yarn fetch month=jul site=www.shop1.com` 
+or
+`$ npm run fetch month=july site=shop1.com`
+It will be the same result in both cases
+
+I've decided to fetch data with raw SQL-query and without using `Sequelize` models (which created and working :) for populated data because current task resolved more simple way. I hope I have correctly understood the intent. 

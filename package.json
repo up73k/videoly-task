@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "populate": "DEBUG=* node populate.js",
+    "fetch": "DEBUG=vtask* node .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jan Beletsky",
   "license": "ISC",
   "dependencies": {
+    "cli-parameter-getter": "^1.0.7",
     "co": "^4.6.0",
-    "dataloader-sequelize": "^1.5.2",
     "debug": "^3.1.0",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
@@ -19,8 +20,8 @@
     "pg-copy-streams": "^1.2.0",
     "pg-hstore": "^2.3.2",
     "pgtools": "^0.3.0",
-    "sequelize": "^4.8.4",
-    "urijs": "^1.18.12"
+    "sequelize": "^4.13.2",
+    "urijs": "^1.19.0"
   },
   "devDependencies": {
     "eslint": "^4.8.0",

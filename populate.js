@@ -28,8 +28,8 @@ const pool = new Pool(postgres);
 
     console.time('Time spent on filling tables');
     yield fillTables(client);
-    console.timeEnd('Time spent on filling tables');
     log('Tables filled');
+    console.timeEnd('Time spent on filling tables');
 
     client.release();
     process.exit(0);
@@ -55,7 +55,8 @@ function* createDb({ user, host, database }) {
 }
 
 function* createTables(client) {
-  return yield [queries.createA, queries.createB, queries.createIndex].map((q) => client.query(q));
+  return yield [queries.createA, queries.createB, queries.index1, queries.index2]
+    .map((q) => client.query(q));
 }
 
 function fillTables(client) {
@@ -69,12 +70,14 @@ function fillTables(client) {
 
     return function A() {
       const timestamp = randomInt(timeRange.start, timeRange.stop);
+      const click = { impression_id: A.counter, timestamp };
+
       if (impressionsWithClicksCounter < counters.impressions && Math.random() >= 0.5) {
         impressionsWithClicksCounter++;
-        firstClick.push({ impression_id: A.counter, timestamp });
-        otherClicks.push(..._.times(randomInt(0, 5), () => ({ impression_id: A.counter, timestamp })));
+        firstClick.push(click);
+        otherClicks.push(..._.times(randomInt(0, 5), () => (click)));
       } else {
-        unclicked.push({ impression_id: A.counter, timestamp });
+        unclicked.push(click);
       }
 
       const time = moment(timestamp).format('YYYY-MM-DDTHH:mm:ss');
